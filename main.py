@@ -20,12 +20,12 @@ async def start_handler(message: types.Message):
     users.add(message.from_user.id)
     name = message.from_user.first_name
     await message.answer(
-        f"Привет, {name}! "
-        f"\nНаш бот обслуживает уже {len(users)} пользователей."
-        f"\nБот умеет: "
-        f"\n/start - Начать работу"
-        f"\n/myinfo - Информация о позьзователе"
-        f"\n/random - Случайное имя из списка"
+        f"Привет, {name}!\n"
+        f"Наш бот обслуживает уже {len(users)} пользователей.\n"
+        f"Команды бота: \n"
+        f"/start - Начать работу\n"
+        f"/myinfo - Информация о позьзователе\n"
+        f"/random - Случайное имя из списка\n"
     )
 
 
@@ -34,6 +34,7 @@ async def myinfo_handler(message: types.Message):
     await message.answer(
         f"Ваш ID: {message.from_user.id}\n"
         f"Имя: {message.from_user.first_name}\n"
+        f"Фамилия: {message.from_user.last_name}\n"
         f"Username: @{message.from_user.username or 'отсутствует'}"
     )
 
