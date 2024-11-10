@@ -6,6 +6,16 @@ token = dotenv_values(".env")["BOT_TOKEN"]
 bot = Bot(token=token)
 dp = Dispatcher()
 users = set()
+
+users_reviewed = set()
+RATINGS = {
+    "1": "Очень плохо",
+    "2": "Плохо",
+    "3": "Удовлетворительно",
+    "4": "Хорошо",
+    "5": "Отлично"
+}
+
 recipes =[
     {
         "name": "Тушёная картошка с мясом, грибами и сметаной",

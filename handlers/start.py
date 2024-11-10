@@ -15,12 +15,16 @@ async def start_handler(message: types.Message):
                 types.InlineKeyboardButton(
                     url="https://www.instagram.com/neymarjr",
                     text="Наш инстаграм"
+                ),
+                types.InlineKeyboardButton(
+                    url="https://online.geeks.kg/",
+                    text="Наш сайт"
                 )
             ],
             [
                 types.InlineKeyboardButton(
-                    url="https://online.geeks.kg/",
-                    text="Наш сайт"
+                    text="Оставить отзыв",
+                    callback_data="review"
                 )
             ]
         ]
