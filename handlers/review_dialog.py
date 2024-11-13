@@ -6,6 +6,12 @@ from bot_config import RATINGS, users_reviewed
 
 review_router = Router()
 
+def validate_rating(rating_value):
+    try:
+        rating = int(rating_value)
+        return 1 <= rating <= 5
+    except ValueError:
+        return False
 
 ratings_kb = types.InlineKeyboardMarkup(
     inline_keyboard=[
@@ -71,7 +77,12 @@ async def start_review(callback: types.CallbackQuery, state: FSMContext):
 
 @review_router.message(RestaurantReview.name)
 async def process_name(message: types.Message, state: FSMContext):
-    await state.update_data(name=message.text)
+    name = message.text
+    if not name.isalpha():
+        await message.answer("Введите ваше имя без различный символов и цифр.")
+        return
+    name = name.capitalize()
+    await state.update_data(name=name)
     await state.set_state(RestaurantReview.contact)
     await message.answer("Введите ваш номер телефона или имя пользователя в Instagram:")
 
@@ -90,16 +101,23 @@ async def process_visit_date(message: types.Message, state: FSMContext):
 
 @review_router.message(RestaurantReview.food_rating)
 async def process_food_rating(message: types.Message, state: FSMContext):
-    await state.update_data(food_rating=message.text)
-    await message.answer("Как вы оцениваете чистоту заведения? (от 1 до 5)", reply_markup=ratings_kb)
-    await state.set_state(RestaurantReview.cleanliness_rating)
-
+    rating = message.text
+    if validate_rating(rating):
+        await state.update_data(food_rating=message.text)
+        await message.answer("Как вы оцениваете чистоту заведения? (от 1 до 5)", reply_markup=ratings_kb)
+        await state.set_state(RestaurantReview.cleanliness_rating)
+    else:
+        await message.answer("Пожалуйста, введите оценку от 1 до 5.")
 
 @review_router.message(RestaurantReview.cleanliness_rating)
 async def process_cleanliness_rating(message: types.Message, state: FSMContext):
-    await state.update_data(cleanliness_rating=message.text)
-    await message.answer("Пожалуйста, оставьте ваши дополнительные комментарии или жалобы (если есть):")
-    await state.set_state(RestaurantReview.extra_comments)
+    rating = message.text
+    if validate_rating(rating):
+        await state.update_data(cleanliness_rating=message.text)
+        await message.answer("Пожалуйста, оставьте ваши дополнительные комментарии или жалобы (если есть):")
+        await state.set_state(RestaurantReview.extra_comments)
+    else:
+        await message.answer("Пожалуйста, введите оценку от 1 до 5.")
 
 
 @review_router.message(RestaurantReview.extra_comments)
