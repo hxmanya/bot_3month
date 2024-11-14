@@ -6,10 +6,10 @@ from bot_config import RATINGS, users_reviewed
 
 review_router = Router()
 
-def validate_rating(rating_value):
+def validate_day(day):
     try:
-        rating = int(rating_value)
-        return 1 <= rating <= 5
+        rating = int(day)
+        return 1 <= rating <= 31
     except ValueError:
         return False
 
@@ -33,10 +33,41 @@ ratings_kb = types.InlineKeyboardMarkup(
     ]
 )
 
+months_kb = types.ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            types.KeyboardButton(text="Январь"),
+            types.KeyboardButton(text="Февраль")
+        ],
+        [
+            types.KeyboardButton(text="Март"),
+            types.KeyboardButton(text="Апрель")
+        ],
+        [
+            types.KeyboardButton(text="Май"),
+            types.KeyboardButton(text="Июнь")
+        ],
+        [
+            types.KeyboardButton(text="Июль"),
+            types.KeyboardButton(text="Август")
+        ],
+        [
+            types.KeyboardButton(text="Сентябрь"),
+            types.KeyboardButton(text="Октябрь")
+        ],
+        [
+            types.KeyboardButton(text="Ноябрь"),
+            types.KeyboardButton(text="Декабрь")
+        ]
+    ],
+    resize_keyboard=True
+)
+
 class RestaurantReview(StatesGroup):
     name = State()
     contact = State()
-    visit_date = State()
+    visit_date_day = State()
+    visit_date_month = State()
     food_rating = State()
     cleanliness_rating = State()
     extra_comments = State()
@@ -90,34 +121,34 @@ async def process_name(message: types.Message, state: FSMContext):
 @review_router.message(RestaurantReview.contact)
 async def process_contact(message: types.Message, state: FSMContext):
     await state.update_data(contact=message.text)
-    await state.set_state(RestaurantReview.visit_date)
-    await message.answer("Введите дату вашего посещения: ")
+    await state.set_state(RestaurantReview.visit_date_day)
+    await message.answer("Введите день вашего посещения: ")
 
-@review_router.message(RestaurantReview.visit_date)
-async def process_visit_date(message: types.Message, state: FSMContext):
-    await state.update_data(visit_date=message.text)
+@review_router.message(RestaurantReview.visit_date_day)
+async def process_visit_date_day(message: types.Message, state: FSMContext):
+    day_number = message.text
+    if validate_day(day_number):
+        await state.update_data(visit_date_day=day_number)
+        await message.answer("Введите месяц:", reply_markup=months_kb)
+        await state.set_state(RestaurantReview.visit_date_month)
+    else:
+        await message.answer("Пожалуйста, введите день от 1 до 31.")
+
+@review_router.message(RestaurantReview.visit_date_month)
+async def process_visit_date_month(message: types.Message, state: FSMContext):
+    kb = types.ReplyKeyboardRemove()
+    await state.update_data(visit_date_month=message.text)
+    await message.answer("Готово!", reply_markup=kb)
     await message.answer("Как вы оцениваете качество еды? (от 1 до 5)", reply_markup=ratings_kb)
     await state.set_state(RestaurantReview.food_rating)
 
 @review_router.message(RestaurantReview.food_rating)
 async def process_food_rating(message: types.Message, state: FSMContext):
-    rating = message.text
-    if validate_rating(rating):
-        await state.update_data(food_rating=message.text)
-        await message.answer("Как вы оцениваете чистоту заведения? (от 1 до 5)", reply_markup=ratings_kb)
-        await state.set_state(RestaurantReview.cleanliness_rating)
-    else:
-        await message.answer("Пожалуйста, введите оценку от 1 до 5.")
+    await message.answer("Пожалуйста, введите оценку от 1 до 5 с помощью кнопок!", reply_markup=ratings_kb)
 
 @review_router.message(RestaurantReview.cleanliness_rating)
 async def process_cleanliness_rating(message: types.Message, state: FSMContext):
-    rating = message.text
-    if validate_rating(rating):
-        await state.update_data(cleanliness_rating=message.text)
-        await message.answer("Пожалуйста, оставьте ваши дополнительные комментарии или жалобы (если есть):")
-        await state.set_state(RestaurantReview.extra_comments)
-    else:
-        await message.answer("Пожалуйста, введите оценку от 1 до 5.")
+    await message.answer("Пожалуйста, введите оценку от 1 до 5 с помощью кнопок!", reply_markup=ratings_kb)
 
 
 @review_router.message(RestaurantReview.extra_comments)
@@ -130,7 +161,7 @@ async def process_extra_comments(message: types.Message, state: FSMContext):
         "Спасибо за ваш отзыв!\n\n"
         f"Имя: {data['name']}\n"
         f"Контакт: {data['contact']}\n"
-        f"Дата посещения: {data['visit_date']}\n"
+        f"Дата посещения: {data['visit_date_day']} {data['visit_date_month']}\n"
         f"Оценка еды: {data['food_rating']}\n"
         f"Оценка чистоты: {data['cleanliness_rating']}\n"
         f"Комментарии: {data['extra_comments']}"
