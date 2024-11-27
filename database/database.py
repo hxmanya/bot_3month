@@ -22,14 +22,24 @@ class Database:
             )
             conn.execute(
                 """
+                    CREATE TABLE IF NOT EXISTS dish_categories(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE
+                    )
+                """
+            )
+            conn.execute(
+                """
                     CREATE TABLE IF NOT EXISTS dishes(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         price INTEGER,
-                        category TEXT
-                    )                
+                        category_id INTEGER,
+                        FOREIGN KEY (category_id) REFERENCES dish_categories (id)
+                    )             
                 """
             )
+
             conn.commit()
 
     def execute(self, query: str, params: tuple):
