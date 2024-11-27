@@ -26,6 +26,16 @@ async def start_handler(message: types.Message):
                     text="Оставить отзыв",
                     callback_data="review"
                 )
+            ],
+            [
+                types.InlineKeyboardButton(
+                    text="Меню", callback_data="menu"
+                )
+            ],
+            [
+                types.InlineKeyboardButton(
+                    text="Добавить блюдо", callback_data="add_dish"
+                )
             ]
         ]
     )
