@@ -1,7 +1,11 @@
+from Tools.scripts.findlinksto import visit
 from aiogram import Router, F, types
+from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from bot_config import RATINGS, users_reviewed
+
+from bot_config import database
 
 
 review_router = Router()
@@ -71,6 +75,14 @@ class RestaurantReview(StatesGroup):
     food_rating = State()
     cleanliness_rating = State()
     extra_comments = State()
+    confirm = State()
+
+@review_router.message(Command("stop"))
+@review_router.message(F.text == "стоп")
+async def stop_opros(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Опрос остановлен")
+
 
 @review_router.callback_query(F.data.in_(RATINGS.keys()))
 async def process_rating(callback: types.CallbackQuery, state: FSMContext):
@@ -154,21 +166,62 @@ async def process_cleanliness_rating(message: types.Message, state: FSMContext):
 @review_router.message(RestaurantReview.extra_comments)
 async def process_extra_comments(message: types.Message, state: FSMContext):
     await state.update_data(extra_comments=message.text)
+    await message.answer("confirm?(yes/no)")
+    await state.set_state(RestaurantReview.confirm)
 
-    data = await state.get_data()
+@review_router.message(RestaurantReview.confirm)
+async def process_confirm(message: types.Message, state: FSMContext):
+    if message.text == "yes":
+        data = await state.get_data()
 
-    review_text = (
-        "Спасибо за ваш отзыв!\n\n"
-        f"Имя: {data['name']}\n"
-        f"Контакт: {data['contact']}\n"
-        f"Дата посещения: {data['visit_date_day']} {data['visit_date_month']}\n"
-        f"Оценка еды: {data['food_rating']}\n"
-        f"Оценка чистоты: {data['cleanliness_rating']}\n"
-        f"Комментарии: {data['extra_comments']}"
-    )
+        visit_date = data["visit_date_day"] + " " + data["visit_date_month"]
 
-    await message.answer(review_text)
+        review_text = (
+            "Спасибо за ваш отзыв!\n\n"
+            f"Имя: {data['name']}\n"
+            f"Контакт: {data['contact']}\n"
+            f"Дата посещения: {visit_date}\n"
+            f"Оценка еды: {data['food_rating']}\n"
+            f"Оценка чистоты: {data['cleanliness_rating']}\n"
+            f"Комментарии: {data['extra_comments']}"
+        )
 
-    users_reviewed.add(message.from_user.id)
 
-    await state.clear()
+        await message.answer(review_text)
+
+        database.execute(
+            query="""
+                 INSERT INTO reviews (name, phone_number, visit_date, food_rating, cleanliness_rating, extra_comments)
+                 VALUES (?,?,?,?,?,?)      
+               """,
+            params=(data["name"], data["contact"], visit_date,
+                    data["food_rating"], data["cleanliness_rating"], data["extra_comments"])
+        )
+
+        users_reviewed.add(message.from_user.id)
+
+        await state.clear()
+    elif message.text == "no":
+        await message.answer("okokok")
+        await state.clear()
+    else:
+        await message.answer("write only 'yes' or 'no'")
+
+
+    # data = await state.get_data()
+    #
+    # review_text = (
+    #     "Спасибо за ваш отзыв!\n\n"
+    #     f"Имя: {data['name']}\n"
+    #     f"Контакт: {data['contact']}\n"
+    #     f"Дата посещения: {data['visit_date_day']} {data['visit_date_month']}\n"
+    #     f"Оценка еды: {data['food_rating']}\n"
+    #     f"Оценка чистоты: {data['cleanliness_rating']}\n"
+    #     f"Комментарии: {data['extra_comments']}"
+    # )
+    #
+    # await message.answer(review_text)
+    #
+    # users_reviewed.add(message.from_user.id)
+    #
+    # await state.clear()
