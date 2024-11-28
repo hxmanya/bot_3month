@@ -1,4 +1,4 @@
-from Tools.scripts.findlinksto import visit
+
 from aiogram import Router, F, types
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
